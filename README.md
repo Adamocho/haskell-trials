@@ -24,3 +24,13 @@ README.md
 ```
 
 Probably linking those README's together is a good idea.
+
+### Shared resources
+
+Book: [LYAH - Learn you a haskell](https://learnyouahaskell.com/chapters)
+
+### Folders
+
+[CIS 194 - Spring of 2013](./cis_194_spring_2013/README.md)
+
+
