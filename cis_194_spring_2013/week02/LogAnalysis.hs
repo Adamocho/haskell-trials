@@ -3,7 +3,6 @@
 module LogAnalysis where
 import Log
 
--- Exercise 1
 parseMessage :: String -> LogMessage
 parseMessage x = case words x of
     "I":time:text -> LogMessage Info (read time :: Int) (unwords text)
@@ -12,28 +11,38 @@ parseMessage x = case words x of
     _ -> Unknown x
 
 parse :: String -> [LogMessage]
-parse xs = map parseMessage (lines xs)
+-- parse xs = [ parseMessage x | x <- lines xs ]
+parse x = map parseMessage (lines x)
 
--- Exercise 2
 insert :: LogMessage -> MessageTree -> MessageTree
-insert (Unknown _) tree = tree
-insert message Leaf = Node Leaf message Leaf
-insert message@(LogMessage _ time _) (Node leftTree middleLog rightTree)
-    | time >= (getTime middleLog) = Node leftTree middleLog (insert message rightTree)
-    | otherwise = Node (insert message leftTree) middleLog rightTree
+insert logm Leaf = Node Leaf logm Leaf
+insert toAdd@(LogMessage _ timestamp _) (Node left middle@(LogMessage _ ts _) right)
+    | timestamp < ts = Node (insert toAdd left) middle right
+    | otherwise = Node left middle (insert toAdd right)
+insert _ tree = tree
 
-getTime :: LogMessage -> Int
-getTime (Unknown _) = 0
-getTime (LogMessage _ time _) = time
-
--- Exercise 3
 build :: [LogMessage] -> MessageTree
-build [] = Leaf
-build [x] = insert x Leaf
-build (x:xs) = insert x (build xs)
+build = foldr insert Leaf
 
--- Exercise 4
 inOrder :: MessageTree -> [LogMessage]
+inOrder (Node leftTree middle rightTree) = inOrder leftTree ++ [middle] ++ inOrder rightTree
 inOrder Leaf = []
-inOrder (Node Leaf node Leaf) = [node]
-inOrder (Node left node right) = (inOrder left) ++ [node] ++ (inOrder right)
+
+whatType :: LogMessage -> String
+whatType (LogMessage (Error _) _  _) = "Error"
+whatType (LogMessage Info _  _) = "Info"
+whatType (LogMessage Warning _  _) = "Warning"
+whatType (Unknown _) = "Unkonwn"
+
+severity :: LogMessage -> Int
+severity (LogMessage (Error sev) _  _) = sev
+severity _ = 0
+
+extractMessages :: [LogMessage] -> [String]
+extractMessages [] = []
+extractMessages ((LogMessage _ _ message):xs) = message : extractMessages xs
+extractMessages ((Unknown _):xs) = extractMessages xs
+
+whatWentWrong :: [LogMessage] -> [String]
+whatWentWrong xs = extractMessages (inOrder (build [ x | x <- xs, whatType x == "Error", severity x >= 50]))
+-- whatWentWrong xs = extractMessages (inOrder (build [ x | x <- xs, whatType x == "Error" ]))
