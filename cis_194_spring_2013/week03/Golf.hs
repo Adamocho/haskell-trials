@@ -30,6 +30,13 @@ localMaxima (x:y:z:xs)
 localMaxima _ = []
 
 -- Task 3 --
+{-
+How it works:
+Splits list into [0..9] x (1 digit for each) sections and then
+checks if x in [0..9] is in this sublist, rendering a '*' or ' '
+and then append the rest of the string.
+Run with: putStr (histogram [7,4])
+-}
 histogram :: [Integer] -> String
 -- histogram numbers = concat [ '\n' : [ if x `elem` xs then '*' else ' ' | x <- [0..9] ] | xs <- reverse (createHistogram numbers) ] ++ "\n==========\n0123456789\n"
 histogram numbers = concat 
