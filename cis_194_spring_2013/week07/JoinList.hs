@@ -21,8 +21,10 @@ import Sized
 -- getSum (Sum a) = a
 
 -- instance Num a => Monoid (Sum a) where
--- mempty = Sum 0
--- mappend = (+)
+--     mempty = Sum 0
+
+-- instance Num a => Semigroup (Sum a) where
+--     Sum x <> Sum y = Sum (x + y)
 
 -- newtype Product a = Product a
 --     deriving (Eq, Ord, Num, Show)
@@ -32,7 +34,9 @@ import Sized
 
 -- instance Num a => Monoid (Product a) where
 --     mempty = Product 1
---     mappend = (*)
+
+-- instance Num a => Semigroup (Product a) where
+--     Product x <> Product y = Product (x * y)
 
 
 data JoinList m a = Empty
@@ -66,10 +70,28 @@ indexJ index (Append _ left@(Single _ _) right)     | index > 0     = indexJ (in
 indexJ index (Append _ Empty right)                 | index >= getSize (size (tag right)) = Nothing
                                                     | otherwise     = indexJ index right
 
+-- dropJ :: (Sized b, Monoid b, Num b) => Int -> JoinList b a -> JoinList b a
+dropJ :: (Sized b, Monoid b) => Int -> JoinList b a -> JoinList b a
+dropJ _ Empty = Empty
+dropJ 0 x = x
+dropJ qty (Single a b)          | qty == 0       = Single a b
+                                | otherwise    = Empty
+dropJ qty (Append q (Single a _) right)  | qty > 0 = Append q Empty (dropJ (qty - 1) right)
+-- dropJ qty (Append q (Single a _) right)  | qty > 0 = Append (q - a) Empty (dropJ (qty - 1) right)
+dropJ qty (Append q Empty right)           = Append q Empty (dropJ qty right)
+dropJ qty (Append q left right)         | qty >= getSize (size q) = Empty
+                                        | qty <= getSize (size (tag left)) = Append q (dropJ qty left) right
+                                        | otherwise = 
+                                            let 
+                                                quantity = (qty - getSize (size (tag left)))
+                                            in
+                                            Append q Empty (dropJ quantity right)
+
 takeJ :: (Sized b, Monoid b) => Int -> JoinList b a -> JoinList b a
 takeJ _ Empty = Empty
 takeJ 0 _ = Empty
-takeJ _ (Single a b) = Single a b
+takeJ qty (Single a b)                  | qty == 0  = Empty
+                                        | otherwise = Single a b
 takeJ qty tree@(Append q left right)    | qty >= getSize (size q) = tree
                                         | qty <= getSize (size (tag left)) = Append q (takeJ qty left) Empty
                                         | otherwise = 
