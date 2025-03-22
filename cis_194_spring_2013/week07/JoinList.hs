@@ -58,19 +58,23 @@ indexJ :: (Sized b, Monoid b) => Int -> JoinList b a -> Maybe a
 indexJ _ Empty                                                      = Nothing
 indexJ index (Single _ a)                           | index > 0     = Nothing
                                                     | otherwise     = Just a
-indexJ index (Append m left@(Append m1 _ _) right)  | index >= m    = Nothing
-                                                    | index < m1    = indexJ index left
-                                                    | otherwise     = indexJ (m - m1) right
-indexJ index (Append m left@(Single _ a) right)     | index > 0     = indexJ (index - 1) right
+indexJ index (Append m left@(Append m1 _ _) right)  | index >= getSize (size m)    = Nothing
+                                                    | index < getSize (size m1)    = indexJ index left
+                                                    | otherwise     = indexJ (getSize (size m) - getSize (size m1)) right
+indexJ index (Append _ left@(Single _ _) right)     | index > 0     = indexJ (index - 1) right
                                                     | otherwise     = indexJ (index - 1) left
+indexJ index (Append _ Empty right)                 | index >= getSize (size (tag right)) = Nothing
+                                                    | otherwise     = indexJ index right
 
 takeJ :: (Sized b, Monoid b) => Int -> JoinList b a -> JoinList b a
 takeJ _ Empty = Empty
 takeJ 0 _ = Empty
 takeJ _ (Single a b) = Single a b
-takeJ qty tree@(Append q left right)    | qty >= q = tree
-                                        | qty <= (size left) = Append q (takeJ qty left) Empty
-                                        | otherwise = Append q left (takeJ (qty - size left))
+takeJ qty tree@(Append q left right)    | qty >= getSize (size q) = tree
+                                        | qty <= getSize (size (tag left)) = Append q (takeJ qty left) Empty
+                                        | otherwise = 
+                                            let 
+                                                quantity = (qty - getSize (size (tag left)))
+                                            in
+                                            Append q left (takeJ quantity right)
 
--- I don't really know if it works because the GHC version has changed...
--- ...since the course was available and not everything can be compiled :(
